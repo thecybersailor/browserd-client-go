@@ -81,23 +81,24 @@ type SnapshotResult struct {
 }
 
 type ActInput struct {
-	Action        string   `json:"action"`
-	Ref           string   `json:"ref,omitempty"`
-	X             float64  `json:"x,omitempty"`
-	Y             float64  `json:"y,omitempty"`
-	DeltaX        float64  `json:"deltaX,omitempty"`
-	DeltaY        float64  `json:"deltaY,omitempty"`
-	Text          string   `json:"text,omitempty"`
-	HTML          string   `json:"html,omitempty"`
-	Key           string   `json:"key,omitempty"`
-	Value         string   `json:"value,omitempty"`
-	Values        []string `json:"values,omitempty"`
-	Clear         bool     `json:"clear,omitempty"`
-	Submit        bool     `json:"submit,omitempty"`
-	Button        string   `json:"button,omitempty"`
-	ClickCount    int      `json:"clickCount,omitempty"`
-	MotionProfile string   `json:"motionProfile,omitempty"`
-	TimeoutMs     int      `json:"timeoutMs,omitempty"`
+	ExpectedSnapshotID string   `json:"expectedSnapshotId,omitempty"`
+	Action             string   `json:"action"`
+	Ref                string   `json:"ref,omitempty"`
+	X                  float64  `json:"x,omitempty"`
+	Y                  float64  `json:"y,omitempty"`
+	DeltaX             float64  `json:"deltaX,omitempty"`
+	DeltaY             float64  `json:"deltaY,omitempty"`
+	Text               string   `json:"text,omitempty"`
+	HTML               string   `json:"html,omitempty"`
+	Key                string   `json:"key,omitempty"`
+	Value              string   `json:"value,omitempty"`
+	Values             []string `json:"values,omitempty"`
+	Clear              bool     `json:"clear,omitempty"`
+	Submit             bool     `json:"submit,omitempty"`
+	Button             string   `json:"button,omitempty"`
+	ClickCount         int      `json:"clickCount,omitempty"`
+	MotionProfile      string   `json:"motionProfile,omitempty"`
+	TimeoutMs          int      `json:"timeoutMs,omitempty"`
 }
 
 type ActResult struct {
