@@ -20,17 +20,20 @@ func TestClientEndpointsCallCurrentBrowserdPaths(t *testing.T) {
 		case "/v1/sessions":
 			writeJSON(t, w, map[string]any{"runtimeSessionId": "rt_1", "resolvedVersion": "v1"})
 		case "/v1/sessions/rt_1/navigate":
-			writeJSON(t, w, map[string]any{"url": "https://example.com", "title": "Example", "snapshotCleared": true})
+			w.WriteHeader(http.StatusAccepted)
+			writeJSON(t, w, map[string]any{"browserd_task_id": "bdt_test"})
 		case "/v1/sessions/rt_1/snapshot":
 			writeJSON(t, w, map[string]any{"snapshotId": "snap_1", "page": map[string]any{"url": "https://example.com", "groups": map[string]any{}}})
 		case "/v1/sessions/rt_1/act":
 			writeJSON(t, w, map[string]any{"ok": true, "action": "click", "ref": "e1"})
 		case "/v1/sessions/rt_1/wait-for":
-			writeJSON(t, w, map[string]any{"ok": true, "conditionType": "ref_actionable", "ref": "e1"})
+			w.WriteHeader(http.StatusAccepted)
+			writeJSON(t, w, map[string]any{"browserd_task_id": "bdt_test"})
 		case "/v1/sessions/rt_1/pageTool":
 			writeJSON(t, w, map[string]any{"value": "Example"})
 		case "/v1/sessions/rt_1/evaluate":
-			writeJSON(t, w, map[string]any{"result": map[string]any{"ok": true}, "url": "https://example.com", "title": "Example"})
+			w.WriteHeader(http.StatusAccepted)
+			writeJSON(t, w, map[string]any{"browserd_task_id": "bdt_test"})
 		case "/v1/sessions/rt_1/screenshot":
 			writeJSON(t, w, map[string]any{"screenshotId": "shot_1.png", "s3Path": "/screens/shot_1.png", "contentType": "image/png", "byteLength": 123})
 		case "/v1/sessions/rt_1/upload-files":
@@ -59,7 +62,7 @@ func TestClientEndpointsCallCurrentBrowserdPaths(t *testing.T) {
 	if _, err := client.CreateSession(ctx, CreateSessionInput{Fingerprint: FingerprintConfig{Seed: "seed"}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.Navigate(ctx, "rt_1", NavigateInput{URL: "https://example.com"}); err != nil {
+	if _, err := client.Navigate(ctx, "rt_1", NavigateInput{TaskControl: TaskControl{RequestID: "test-request"}, URL: "https://example.com"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := client.Snapshot(ctx, "rt_1", SnapshotInput{Mode: "refs"}); err != nil {
@@ -68,13 +71,13 @@ func TestClientEndpointsCallCurrentBrowserdPaths(t *testing.T) {
 	if _, err := client.Act(ctx, "rt_1", ActInput{Action: "click", Ref: "e1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.WaitFor(ctx, "rt_1", WaitForInput{Condition: WaitForCondition{Type: "ref_actionable", Ref: "e1"}}); err != nil {
+	if _, err := client.WaitFor(ctx, "rt_1", WaitForInput{TaskControl: TaskControl{RequestID: "test-request"}, Condition: WaitForCondition{Type: "ref_actionable", Ref: "e1"}}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := client.PageTool(ctx, "rt_1", PageToolInput{Method: "page.title"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.Evaluate(ctx, "rt_1", EvaluateInput{Script: "return true"}); err != nil {
+	if _, err := client.Evaluate(ctx, "rt_1", EvaluateInput{TaskControl: TaskControl{RequestID: "test-request"}, Script: "return true"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := client.Screenshot(ctx, "rt_1", ScreenshotInput{Mode: "viewport", ScreenshotS3Prefix: "/screens/"}); err != nil {
@@ -155,7 +158,6 @@ func TestValidateActInputCurrentActions(t *testing.T) {
 		{Action: "press", Ref: "e1", Key: "Enter"},
 		{Action: "scrollIntoView", Ref: "t1"},
 		{Action: "select", Ref: "e1", Values: []string{"a"}},
-		{Action: "waitFor", Ref: "e1"},
 	}
 	for _, input := range valid {
 		if err := ValidateActInput(input); err != nil {

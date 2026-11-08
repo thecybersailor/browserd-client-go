@@ -13,7 +13,7 @@ func ValidateActInput(input ActInput) error {
 		if ref == "" && (input.X <= 0 || input.Y <= 0) {
 			return Error{Code: "browserd_act_target_required", Message: "click requires ref or x/y"}
 		}
-	case "doubleClick", "hover", "scrollIntoView", "select", "waitFor":
+	case "doubleClick", "hover", "scrollIntoView", "select":
 		if ref == "" {
 			return Error{Code: "browserd_act_ref_required", Message: action + " requires ref"}
 		}

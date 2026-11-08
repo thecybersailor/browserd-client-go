@@ -48,10 +48,10 @@ type CommitResult struct {
 }
 
 type NavigateInput struct {
+	TaskControl
 	IncludeSnapshot           bool   `json:"includeSnapshot,omitempty"`
 	URL                       string `json:"url"`
 	WaitUntil                 string `json:"waitUntil,omitempty"`
-	TimeoutMs                 int    `json:"timeoutMs,omitempty"`
 	AfterLoadScreenshotS3Path string `json:"afterLoadScreenshotS3Path,omitempty"`
 }
 
@@ -119,8 +119,8 @@ type WaitForCondition struct {
 }
 
 type WaitForInput struct {
+	TaskControl
 	Condition  WaitForCondition `json:"condition"`
-	TimeoutMs  int              `json:"timeoutMs,omitempty"`
 	IntervalMs int              `json:"intervalMs,omitempty"`
 	StableMs   int              `json:"stableMs,omitempty"`
 }
@@ -174,6 +174,7 @@ type UploadFilesResult struct {
 }
 
 type PageToolInput struct {
+	TaskControl
 	Method    string         `json:"method"`
 	Payload   map[string]any `json:"payload,omitempty"`
 	TimeoutMs int            `json:"timeoutMs,omitempty"`
@@ -187,9 +188,9 @@ type PageToolBridgeConfig struct {
 }
 
 type EvaluateInput struct {
+	TaskControl
 	Script             string                `json:"script"`
 	Args               []any                 `json:"args,omitempty"`
-	TimeoutMs          int                   `json:"timeoutMs,omitempty"`
 	World              string                `json:"world,omitempty"`
 	AllowDuringHandoff bool                  `json:"allowDuringHandoff,omitempty"`
 	PageToolBridge     *PageToolBridgeConfig `json:"pageToolBridge,omitempty"`

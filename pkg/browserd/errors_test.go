@@ -22,7 +22,7 @@ func TestClientPreservesTransportCause(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = client.Navigate(context.Background(), "rt_1", NavigateInput{URL: "https://example.com"})
+		_, err = client.Navigate(context.Background(), "rt_1", NavigateInput{TaskControl: TaskControl{RequestID: "test-request"}, URL: "https://example.com"})
 		var typed Error
 		if !AsError(err, &typed) || typed.Code != "browserd_unavailable" || !errors.Is(err, cause) {
 			t.Fatalf("transport cause lost: %v", err)
@@ -39,7 +39,7 @@ func TestClientPreservesResponseDecodeCause(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = client.Navigate(context.Background(), "rt_1", NavigateInput{URL: "https://example.com"})
+	_, err = client.Navigate(context.Background(), "rt_1", NavigateInput{TaskControl: TaskControl{RequestID: "test-request"}, URL: "https://example.com"})
 	var typed Error
 	var syntax *json.SyntaxError
 	if !AsError(err, &typed) || typed.Code != "browserd_response_invalid" || !errors.As(err, &syntax) {

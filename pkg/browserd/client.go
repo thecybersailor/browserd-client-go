@@ -58,26 +58,14 @@ func (c *Client) CreateSession(ctx context.Context, input CreateSessionInput) (S
 	return out, err
 }
 
-func (c *Client) Navigate(ctx context.Context, runtimeSessionID string, input NavigateInput) (NavigateResult, error) {
-	var out NavigateResult
-	err := c.doJSON(ctx, http.MethodPost, sessionPath(runtimeSessionID, "navigate"), input, &out)
-	if err != nil {
-		var response Error
-		if input.IncludeSnapshot && AsError(err, &response) && response.Code == "browserd_response_invalid" && response.StatusCode >= 200 && response.StatusCode < 300 {
-			return NavigateResult{}, Error{Code: "BROWSERD_SNAPSHOT_REQUIRED", Message: "navigation did not return the requested valid snapshot", Operation: http.MethodPost, Path: sessionPath(runtimeSessionID, "navigate"), StatusCode: response.StatusCode, Cause: err}
-		}
-		return NavigateResult{}, err
+func (c *Client) Navigate(ctx context.Context, runtimeSessionID string, input NavigateInput) (TaskSubmission, error) {
+	if strings.TrimSpace(runtimeSessionID) == "" {
+		return TaskSubmission{}, Error{Code: "INVALID_REQUEST", Message: "runtimeSessionId is required"}
 	}
-	if input.IncludeSnapshot {
-		err = ValidateSnapshotResult(out.Snapshot)
-		if err == nil && out.URL != out.Snapshot.Page["url"] {
-			err = fmt.Errorf("navigation URL does not match snapshot URL")
-		}
-		if err != nil {
-			return NavigateResult{}, Error{Code: "BROWSERD_SNAPSHOT_REQUIRED", Message: "navigation did not return the requested valid snapshot", Operation: http.MethodPost, Path: sessionPath(runtimeSessionID, "navigate"), Cause: err}
-		}
+	if err := ValidateTaskControl(input.TaskControl); err != nil {
+		return TaskSubmission{}, err
 	}
-	return out, nil
+	return c.submitTask(ctx, sessionPath(runtimeSessionID, "navigate"), input)
 }
 
 func (c *Client) Snapshot(ctx context.Context, runtimeSessionID string, input SnapshotInput) (SnapshotResult, error) {
@@ -99,13 +87,23 @@ func (c *Client) Act(ctx context.Context, runtimeSessionID string, input ActInpu
 	return out, err
 }
 
-func (c *Client) WaitFor(ctx context.Context, runtimeSessionID string, input WaitForInput) (WaitForResult, error) {
-	var out WaitForResult
-	err := c.doJSON(ctx, http.MethodPost, sessionPath(runtimeSessionID, "wait-for"), input, &out)
-	return out, err
+func (c *Client) WaitFor(ctx context.Context, runtimeSessionID string, input WaitForInput) (TaskSubmission, error) {
+	if strings.TrimSpace(runtimeSessionID) == "" {
+		return TaskSubmission{}, Error{Code: "INVALID_REQUEST", Message: "runtimeSessionId is required"}
+	}
+	if err := ValidateTaskControl(input.TaskControl); err != nil {
+		return TaskSubmission{}, err
+	}
+	if err := ValidateWaitForCondition(input.Condition); err != nil {
+		return TaskSubmission{}, err
+	}
+	return c.submitTask(ctx, sessionPath(runtimeSessionID, "wait-for"), input)
 }
 
 func (c *Client) PageTool(ctx context.Context, runtimeSessionID string, input PageToolInput) (PageToolResult, error) {
+	if input.Method == "page.waitForLoadState" {
+		return nil, Error{Code: "INVALID_REQUEST", Message: "page.waitForLoadState is a task; use WaitForLoadState then WatchTask"}
+	}
 	if err := ValidatePageToolInput(input); err != nil {
 		return nil, err
 	}
@@ -114,10 +112,14 @@ func (c *Client) PageTool(ctx context.Context, runtimeSessionID string, input Pa
 	return out, err
 }
 
-func (c *Client) Evaluate(ctx context.Context, runtimeSessionID string, input EvaluateInput) (EvaluateResult, error) {
-	var out EvaluateResult
-	err := c.doJSON(ctx, http.MethodPost, sessionPath(runtimeSessionID, "evaluate"), input, &out)
-	return out, err
+func (c *Client) Evaluate(ctx context.Context, runtimeSessionID string, input EvaluateInput) (TaskSubmission, error) {
+	if strings.TrimSpace(runtimeSessionID) == "" {
+		return TaskSubmission{}, Error{Code: "INVALID_REQUEST", Message: "runtimeSessionId is required"}
+	}
+	if err := ValidateTaskControl(input.TaskControl); err != nil {
+		return TaskSubmission{}, err
+	}
+	return c.submitTask(ctx, sessionPath(runtimeSessionID, "evaluate"), input)
 }
 
 func (c *Client) Screenshot(ctx context.Context, runtimeSessionID string, input ScreenshotInput) (ScreenshotResult, error) {
@@ -162,6 +164,9 @@ func (c *Client) Close(ctx context.Context, runtimeSessionID string) error {
 }
 
 func (c *Client) doJSON(ctx context.Context, method string, path string, input any, output any) error {
+	return c.doJSONStatus(ctx, method, path, input, output, 0)
+}
+func (c *Client) doJSONStatus(ctx context.Context, method string, path string, input any, output any, expectedStatus int) error {
 	if c == nil || strings.TrimSpace(c.baseURL) == "" || c.httpClient == nil {
 		return Error{Code: "browserd_client_not_configured", Message: "browserd client is not configured", Operation: method, Path: path}
 	}
@@ -201,6 +206,9 @@ func (c *Client) doJSON(ctx context.Context, method string, path string, input a
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return Error{Code: "browserd_request_failed", Message: fmt.Sprintf("browserd returned status %d", res.StatusCode), StatusCode: res.StatusCode, Operation: method, Path: path}
+	}
+	if expectedStatus != 0 && res.StatusCode != expectedStatus {
+		return Error{Code: "browserd_response_invalid", Message: fmt.Sprintf("expected HTTP %d for task submission, got %d", expectedStatus, res.StatusCode), StatusCode: res.StatusCode, Operation: method, Path: path}
 	}
 	if envelope.Data == nil {
 		return Error{Code: "browserd_response_invalid", Message: "missing data", StatusCode: res.StatusCode, Operation: method, Path: path}

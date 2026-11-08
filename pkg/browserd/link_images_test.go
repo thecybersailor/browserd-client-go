@@ -23,7 +23,10 @@ func TestLinkImageColumnsSurviveNavigateAndSnapshot(t *testing.T) {
 		var data any
 		switch r.Method + " " + r.URL.Path {
 		case "POST /v1/sessions/rt_1/navigate":
-			data = map[string]any{"url": "https://example.com/catalog", "snapshot": snapshot}
+			w.WriteHeader(http.StatusAccepted)
+			data = map[string]any{"browserd_task_id": "bdt_test"}
+		case "POST /v1/tasks/bdt_test/watch":
+			data = map[string]any{"browserd_task_id": "bdt_test", "state": "succeeded", "info": map[string]any{"operation": "navigate", "result": map[string]any{"url": "https://example.com/catalog", "snapshot": snapshot}}}
 		case "GET /v1/sessions/rt_1/snapshot":
 			data = snapshot
 		default:
@@ -37,7 +40,15 @@ func TestLinkImageColumnsSurviveNavigateAndSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nav, err := c.Navigate(context.Background(), "rt_1", NavigateInput{URL: "https://example.com/catalog", IncludeSnapshot: true})
+	submission, err := c.Navigate(context.Background(), "rt_1", NavigateInput{TaskControl: TaskControl{RequestID: "r"}, URL: "https://example.com/catalog", IncludeSnapshot: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, err := c.WatchTask(context.Background(), submission.BrowserdTaskID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nav, err := DecodeNavigationResult(task, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +61,7 @@ func TestLinkImageColumnsSurviveNavigateAndSnapshot(t *testing.T) {
 			t.Fatalf("image-only links, full image URLs or column identity lost: %+v", page)
 		}
 	}
-	if calls != 2 {
+	if calls != 3 {
 		t.Fatalf("unexpected retry or fallback: %d calls", calls)
 	}
 }

@@ -1,3 +1,3 @@
-module github.com/flaboy/browserd-client-go
+module github.com/thecybersailor/browserd-client-go
 
 go 1.23
