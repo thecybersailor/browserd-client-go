@@ -8,9 +8,7 @@ func ValidateActInput(input ActInput) error {
 		return Error{Code: "browserd_act_action_required", Message: "action is required"}
 	}
 	ref := strings.TrimSpace(input.Ref)
-	if input.ExpectedSnapshotID != "" && (input.X != 0 || input.Y != 0 || (ref == "" && action != "scroll")) {
-		return Error{Code: "browserd_act_observation_target_invalid", Message: "guarded actions require an observed ref; coordinates are not allowed"}
-	}
+
 	switch action {
 	case "click":
 		if ref == "" && (input.X <= 0 || input.Y <= 0) {

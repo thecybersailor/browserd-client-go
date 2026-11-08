@@ -19,10 +19,7 @@ go test ./...
 go vet ./...
 ```
 
-For decisions based on a captured page, set `ActInput.ExpectedSnapshotID` to the
-`SnapshotResult.SnapshotID` from that observation. Guarded actions use an observed
-`Ref` (or a scroll delta); coordinates are rejected. The server checks document,
-node identity, relevant page state and target actionability before input.
-`STALE_OBSERVATION` and `TARGET_NOT_ACTIONABLE` mean the input was rejected before
-execution: take a new observation and decide again. Other failures can have an
-unknown execution result and must not be automatically replayed.
+`Act` executes the selected browser input directly. Page changes after an
+observation do not invalidate that action. `SnapshotID` identifies observations
+for tracing. Inspect the actual execution result before deciding the next step;
+unknown execution results must not be automatically replayed.
